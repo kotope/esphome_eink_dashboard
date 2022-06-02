@@ -1,7 +1,7 @@
 substitutions:
   run_time: 1min
   sleep_time: 20min
-  
+
 esphome:
   name: eink-dashboard
   includes:
@@ -19,7 +19,7 @@ logger:
 api:
 
 deep_sleep:
-  run_duration: ${run_time} 
+  run_duration: ${run_time}
   sleep_duration: ${sleep_time}
   id: deep_sleep_1
   esp32_ext1_wakeup:
@@ -28,8 +28,8 @@ deep_sleep:
 
 web_server:
   port: 80
-  include_internal: true 
-  
+  include_internal: true
+
 ota:
   password: "0b62d1a11ee7d717a02b28788591214f"
 
@@ -43,18 +43,18 @@ wifi:
     password: "asdfasdf1234"
 
 captive_portal:
-    
+
 time:
   - platform: homeassistant
     id: ntp
-    
+
 external_components:
   - source:
       type: git
       url: https://github.com/vbaksa/esphome
       ref: dev
     components:
-      - lilygo_t5_47_battery 
+      - lilygo_t5_47_battery
       - lilygo_t5_47_display
 
 sensor:
@@ -114,7 +114,7 @@ sensor:
     device_class: battery
     lambda: |-
       int y = (1-(4.1-id(batt_volt).voltage->state)/(4.1-3.3))*100;
-      if (y < 100) {return y;} else {return 100;};    
+      if (y < 100) {return y;} else {return 100;};
 
 text_sensor:
   # sun/moon
@@ -156,7 +156,7 @@ text_sensor:
     on_value: # Actions to perform once data for the last sensor has been received
       then:
         - script.execute: all_data_received
-        
+
 script:
   - id: all_data_received
     then:
@@ -167,7 +167,7 @@ script:
 font:
   - file: "fonts/OpenSans-Medium.ttf"
     id: font_small
-    size: 28    
+    size: 28
     glyphs: |-
       !"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'/&|ÁÉÍÓÖŐÚÜŰÄáéíóöőúüűä
   - file: "fonts/OpenSans-Medium.ttf"
@@ -278,7 +278,7 @@ font:
     glyphs:
       - "\U000F005E" # arrow-up-thick
       - "\U000F0046" # arrow-down-thick
-      
+
 display:
   - platform: lilygo_t5_47_display
     id: t5_display
@@ -297,7 +297,7 @@ display:
       #define ICON_cottage          "\U000F104D"
       #define ICON_garage           "\U000F06D9"
       #define ICON_terrace          "\U000F06A1"
-      
+
       // positioning constants
       #define xRes 960
       #define yRes 540
@@ -317,7 +317,7 @@ display:
 
       // ** TOP: date
       it.strftime(pad, pad, id(font_xlarge_bold), TextAlign::TOP_LEFT, "%a %Y-%m-%d", time);
-      
+
       // nameday
       std::vector<std::string> vector = splitStringIntoVector(id(nameday).state, 23);
       if (vector.size() >= 1) {
@@ -329,7 +329,7 @@ display:
       // ** TOP RIGHT: moon phase
       auto moonIcon = moonToIcon(id(moon).state);
       it.printf(xRes - pad/2, pad, id(font_icons_small), TextAlign::TOP_RIGHT, moonIcon.c_str()); 
-      
+
       // ** TOP: Calendar
       y = 155;
 
@@ -338,22 +338,22 @@ display:
       if(id(calendar_message).state.length() > 0) {
         std::string start = id(calendar_start).state;
         struct tm tp;
-      
+
         strptime(start.c_str(), "%Y-%m-%d %H:%M:%S", &tp);
         tp.tm_isdst = 1; // TODO: Day light saving.. will this need to be handled once the daylight saving goes off?
-      
+
         time_t c_t = mktime(&tp);
         auto t = time::ESPTime::from_c_tm(&tp, c_t);
-  
+
         if (t.timestamp < time.timestamp + (86400*7) )  {
           it.strftime(77+10, y-15, id(font_medium), TextAlign::CENTER_LEFT, "%a", t);
           it.strftime(77+0, y+15, id(font_medium), TextAlign::CENTER_LEFT, "%H:%M", t);
-          it.printf(77 + 108, y, id(font_big), TextAlign::CENTER_LEFT, "%.25s", id(calendar_message).state.c_str());
+          it.printf(77 + 108, y, id(font_big), TextAlign::CENTER_LEFT, "%.35s", id(calendar_message).state.c_str());
         } else {
           it.printf(77, y, id(font_big), TextAlign::CENTER_LEFT, "No events in 7 days");
         }
       }
-      
+
       // ** Left: Single temperatures + humidity
       // Indoor
       y = 290;
@@ -366,7 +366,7 @@ display:
         it.printf(humidityCol, y, id(font_medium), TextAlign::BASELINE_RIGHT, "%.0f", id(humidity_indoor).state);
         it.printf(humidityCol, y, id(font_small), TextAlign::BASELINE_LEFT, "%%");
       }
-      
+
       // Bathroom
       y += rowHeight; // 350
       it.printf(pad, y, id(font_icons_small), TextAlign::BASELINE_LEFT, ICON_shower); 
@@ -378,7 +378,7 @@ display:
         it.printf(humidityCol, y, id(font_medium), TextAlign::BASELINE_RIGHT, "%.0f", id(humidity_bathroom).state);
         it.printf(humidityCol, y, id(font_small), TextAlign::BASELINE_LEFT, "%%");
       }
-      
+
       // Garage
       y += rowHeight; // 425
       it.printf(pad, y, id(font_icons_small), TextAlign::BASELINE_LEFT, ICON_garage);
@@ -390,7 +390,7 @@ display:
         it.printf(humidityCol, y, id(font_medium), TextAlign::BASELINE_RIGHT, "%.0f", id(humidity_garage).state);
         it.printf(humidityCol, y, id(font_small), TextAlign::BASELINE_LEFT, "%%");
       }
-      
+
       // Deck
       y += rowHeight; // 500
       it.printf(pad, y, id(font_icons_small), TextAlign::BASELINE_LEFT, ICON_terrace);
@@ -406,12 +406,12 @@ display:
       // ** Center col: Current weather + battery
       auto centerCol = (humidityCol + 40 + xCenter - 10) / 2;
       y = 290;
-  
+
       if (!isnan(id(temp_outdoor).state)) {
         it.printf(centerCol, y, id(font_xlarge_bold), TextAlign::CENTER_RIGHT, "%.0f", id(temp_outdoor).state);
         it.printf(centerCol, y - celsiusSuperscript, id(font_large), TextAlign::CENTER_LEFT, "°C");
       }
-      
+
       // current condition icon
       auto conditionIcon = conditionToIcon(id(w_condition).state, dayTime);
       it.printf(centerCol, y + 90, id(font_icons), TextAlign::CENTER, conditionIcon.c_str());
@@ -421,8 +421,8 @@ display:
       auto batIcon = batteryToIcon(id(batt).state);
       it.printf(centerCol - 80, y + rowHeight/4, id(font_icons_small), TextAlign::BASELINE_LEFT, batIcon.c_str());
       it.printf(centerCol, y + rowHeight/4 - 6, (font_small), TextAlign::BASELINE_CENTER, "%.2fV", id(batt_volt).voltage->state);
-      
-      // ** R÷IGHT: Weather forecasts
+
+      // ** RIGHT: Weather forecasts
       if (id(w_forecast).has_state())
       {
           DynamicJsonDocument doc(2048);
@@ -436,13 +436,13 @@ display:
             // Day of week
             y = 240;
             std::string root_0_datetime = root_0["datetime"];
-            
+
             // TODO: Move converter to common.h
             struct tm timeParsed;
             strptime(root_0_datetime.c_str(), "%Y-%m-%dT%H:%M:%S", &timeParsed);
             time_t c_time = mktime(&timeParsed);
             auto dt = time::ESPTime::from_c_tm(&timeParsed, c_time);
-          
+
             it.strftime(xCenter + weatherCol * (i+1), y, id(font_medium), TextAlign::BASELINE_CENTER, "%a", dt);
 
             // Condition
@@ -450,7 +450,7 @@ display:
             std::string root_0_condition = root_0["condition"];
             auto icon = conditionToIcon(root_0_condition, dayTime);
             it.printf(xCenter + weatherCol * (i+1), y, id(font_icons_small), TextAlign::BASELINE_CENTER, icon.c_str());
-            
+
             // Temperature
             y = 350;
             if (i == 0) {
@@ -459,7 +459,7 @@ display:
             float root_0_temperature = root_0["temperature"];
             it.printf(xCenter + weatherCol * (i+1) + weatherTempCorr, y, id(font_large), TextAlign::BASELINE_RIGHT, "%.0f", root_0_temperature);
             it.printf(xCenter + weatherCol * (i+1) + weatherTempCorr, y - celsiusSuperscript, id(font_medium), TextAlign::BASELINE_LEFT, "°C");
-            
+
             // Low
             y = 425;
             if (i == 0) {
@@ -468,7 +468,7 @@ display:
             float root_0_templow = root_0["templow"];
             it.printf(xCenter + weatherCol * (i+1) + weatherTempCorr, y, id(font_large), TextAlign::BASELINE_RIGHT, "%.0f", root_0_templow);
             it.printf(xCenter + weatherCol * (i+1) + weatherTempCorr, y - celsiusSuperscript, id(font_medium), TextAlign::BASELINE_LEFT, "°C");
-            
+
             // Precipitation
             y = 500;
             if (i == 0) {
@@ -480,7 +480,7 @@ display:
 
           }
       }
-      
+
       // ** Vertical lines
       it.line(humidityCol + 40, 220, humidityCol + 40, yRes);
       it.line(xCenter - 10, 220, xCenter - 10, yRes);
