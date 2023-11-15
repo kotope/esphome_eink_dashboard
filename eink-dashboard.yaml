@@ -1,5 +1,5 @@
 substitutions:
-  run_time: 1min
+  run_time: 30sec
   sleep_time: 20min
 
 esphome:
@@ -36,6 +36,7 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  fast_connect: true
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -49,13 +50,9 @@ time:
     id: ntp
 
 external_components:
-  - source:
-      type: git
-      url: https://github.com/vbaksa/esphome
-      ref: dev
+  - source: github://mizsha/esphome-components
     components:
-      - lilygo_t5_47_battery
-      - lilygo_t5_47_display
+      - t547
 
 sensor:
   - platform: homeassistant
@@ -100,21 +97,25 @@ sensor:
     id: humidity_garage
     internal: true
 
-  #battery
-  - platform: lilygo_t5_47_battery
-    update_interval: 60s
+  - platform: adc
+    pin: GPIO36
+    name: "${esp_name} Battery Voltage"
     id: batt_volt
-    voltage:
-      name: "Battery Voltage"
+    attenuation: 11db
+    update_interval: never
+    filters:
+      - multiply: 2
+
   - platform: template
-    name: "e-ink Dashboard Battery"
+    name: "${esp_name} Battery"
     id: batt
     unit_of_measurement: "%"
     accuracy_decimals: 0
     device_class: battery
     lambda: |-
-      int y = (1-(4.1-id(batt_volt).voltage->state)/(4.1-3.3))*100;
+      int y = (1-(4.1-id(batt_volt).state)/(4.1-3.3))*100;
       if (y < 100) {return y;} else {return 100;};
+    update_interval: never
 
 text_sensor:
   # sun/moon
@@ -156,6 +157,7 @@ text_sensor:
     on_value: # Actions to perform once data for the last sensor has been received
       then:
         - script.execute: all_data_received
+        - deep_sleep.enter: deep_sleep_1
 
 script:
   - id: all_data_received
@@ -280,7 +282,7 @@ font:
       - "\U000F0046" # arrow-down-thick
 
 display:
-  - platform: lilygo_t5_47_display
+  - platform: t547
     id: t5_display
     update_interval: never
     lambda: |-
@@ -326,11 +328,11 @@ display:
         it.printf(xRes - pad - 55, pad + rowHeight/2, id(font_small), TextAlign::TOP_RIGHT, "%.23s", vector[1].c_str());
       }
 
-      // ** TOP RIGHT: moon phase
+      // TOP RIGHT: moon phase
       auto moonIcon = moonToIcon(id(moon).state);
       it.printf(xRes - pad/2, pad, id(font_icons_small), TextAlign::TOP_RIGHT, moonIcon.c_str()); 
 
-      // ** TOP: Calendar
+      // TOP: Calendar
       y = 155;
 
       it.printf(pad, y, id(font_icons_small), TextAlign::CENTER_LEFT, ICON_calendar); 
@@ -343,7 +345,7 @@ display:
         tp.tm_isdst = 1; // TODO: Day light saving.. will this need to be handled once the daylight saving goes off?
 
         time_t c_t = mktime(&tp);
-        auto t = time::ESPTime::from_c_tm(&tp, c_t);
+        auto t = ESPTime::from_c_tm(&tp, c_t);
 
         if (t.timestamp < time.timestamp + (86400*7) )  {
           it.strftime(77+10, y-15, id(font_medium), TextAlign::CENTER_LEFT, "%a", t);
@@ -403,7 +405,7 @@ display:
         it.printf(humidityCol, y, id(font_small), TextAlign::BASELINE_LEFT, "%%");
       }
 
-      // ** Center col: Current weather + battery
+      // Center col: Current weather + battery
       auto centerCol = (humidityCol + 40 + xCenter - 10) / 2;
       y = 290;
 
@@ -420,9 +422,9 @@ display:
       y = 500;
       auto batIcon = batteryToIcon(id(batt).state);
       it.printf(centerCol - 80, y + rowHeight/4, id(font_icons_small), TextAlign::BASELINE_LEFT, batIcon.c_str());
-      it.printf(centerCol, y + rowHeight/4 - 6, (font_small), TextAlign::BASELINE_CENTER, "%.2fV", id(batt_volt).voltage->state);
+      it.printf(centerCol, y + rowHeight/4 - 6, (font_small), TextAlign::BASELINE_CENTER, "%.2fV", id(batt_volt)->state);
 
-      // ** RIGHT: Weather forecasts
+      // RIGHT: Weather forecasts
       if (id(w_forecast).has_state())
       {
           DynamicJsonDocument doc(2048);
@@ -441,7 +443,7 @@ display:
             struct tm timeParsed;
             strptime(root_0_datetime.c_str(), "%Y-%m-%dT%H:%M:%S", &timeParsed);
             time_t c_time = mktime(&timeParsed);
-            auto dt = time::ESPTime::from_c_tm(&timeParsed, c_time);
+            auto dt = ESPTime::from_c_tm(&timeParsed, c_time);
 
             it.strftime(xCenter + weatherCol * (i+1), y, id(font_medium), TextAlign::BASELINE_CENTER, "%a", dt);
 
