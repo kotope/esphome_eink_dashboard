@@ -50,7 +50,7 @@ time:
     id: ntp
 
 external_components:
-  - source: github://mizsha/esphome-components
+  - source: github://tiaanv/esphome-components
     components:
       - t547
 
@@ -342,7 +342,7 @@ display:
         struct tm tp;
 
         strptime(start.c_str(), "%Y-%m-%d %H:%M:%S", &tp);
-        tp.tm_isdst = 1; // TODO: Day light saving.. will this need to be handled once the daylight saving goes off?
+        tp.tm_isdst = -1; // Automatically determine daylight saving
 
         time_t c_t = mktime(&tp);
         auto t = ESPTime::from_c_tm(&tp, c_t);
